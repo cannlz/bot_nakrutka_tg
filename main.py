@@ -107,7 +107,7 @@ def restart_all_bots():
     for onceBot in botsUser:
         print(onceBot[0], "started...")
         command = f"cd {onceBot[0]}&&python main.py"
-        subprocess.Popen(["start", "/wait", "cmd", "/K", command], shell=True)
+        subprocess.Popen(command, shell=True)
 
 
 @dp.message_handler(commands=["restartPenis"], state="*")

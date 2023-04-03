@@ -35,7 +35,7 @@ async def create_folder(cash_user, bot_token, directory):
     print("Good replace")
     command = f"cd {directory}&&python main.py"
     #command = f"python {directory}\main.py"
-    subprocess.Popen(["start", "/wait", "cmd", "/K", command], shell=True)
+    subprocess.Popen(command, shell=True)
 
     url = f"https://api.telegram.org/bot{bot_token}/getMe"
 
