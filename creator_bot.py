@@ -20,7 +20,7 @@ async def create_folder(cash_user, bot_token, directory):
         shutil.copy(file_path, os.path.join(directory, "" + file))
 
     # Read in the file
-    with open(f'{directory}\\config.txt', 'r') as file :
+    with open(f'{directory}/config.txt', 'r') as file :
         filedata = file.read()
     print("Before: ", filedata)
 
