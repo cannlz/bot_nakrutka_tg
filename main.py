@@ -197,41 +197,9 @@ async def create_new_bot(call: types.CallbackQuery):
     markup_inline = types.InlineKeyboardMarkup()
     startCreateBot = types.InlineKeyboardButton(text="Создать бота 💎", callback_data="startCreateBot")
     bot_settings = types.InlineKeyboardButton(text="Настройки ⚙️", callback_data="bot_settings")
-    bot_instruction = types.InlineKeyboardButton(text="Инструкиця 💻", callback_data="bot_instruction")
     back_btn = types.InlineKeyboardButton(text="❌Назад", callback_data="Start")
-    markup_inline.add(startCreateBot).add(bot_settings, bot_instruction).add(back_btn)
+    markup_inline.add(startCreateBot).add(bot_settings).add(back_btn)
     await call.message.edit_text("➡️В вашем созданном боте все услуги будут скоординированы под вашу наценку, которая и является вашим заработком. Весь доход от услуг будет приходить в основного бота @botapbot_bot, где вы сможете удобно и быстро вывести заработанные средства.\nМы гарантируем оперативную поддержку в случае возникновения вопросов. \n\nРаботайте с нашим ботом и получайте стабильный доход!", reply_markup=markup_inline)
-
-@dp.callback_query_handler(text_startswith="bot_instruction")
-async def bot_instruction(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-
-    markup_inline = types.InlineKeyboardMarkup()
-    back_btn = types.InlineKeyboardButton(text="❌Назад", callback_data="delImage")
-    markup_inline.add(back_btn)
-    
-    photo_input = open('create_inst.jpg', 'rb')
-    await bot.send_photo(chat_id=call.from_user.id, photo=photo_input, caption="Инструкция, где найти API ключ своего бота", reply_markup= markup_inline)
-    await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-    async with state.proxy() as data:
-        data['callMessageIDdel'] = call.message.message_id
-
-@dp.callback_query_handler(text_startswith="delImage")
-async def delImage(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-    data_state = await state.get_data()
-    dellId = data_state['callMessageIDdel']
-    await bot.delete_message(chat_id=call.from_user.id, message_id=dellId + 1)
-    await state.finish()
-    markup_inline = types.InlineKeyboardMarkup()
-    nakrutka = types.InlineKeyboardButton(text="Накрутка 💎", callback_data="nakrutkaaMain")
-    test_btn_create_bot = types.InlineKeyboardButton(text="Создай своего бота💎", callback_data="create_new_bot")
-    balans = types.InlineKeyboardButton(text="Мой кошелёк 💵", callback_data="balanss")
-    infoButton = types.InlineKeyboardButton(text="Информация📚", callback_data="infoButton")
-    markup_inline.add(nakrutka).add(balans).add(infoButton).add(test_btn_create_bot)
-
-    await call.message.answer('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @botapbot_bot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @botapbot_bot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
-
 
 
 @dp.callback_query_handler(text_startswith="bot_settings")
