@@ -19,7 +19,7 @@ import os
 from webserver import keep_alive
 
 # ФИКС РАБОТЫ ЦИКЛОВ LOOP
-#nest_asyncio.apply()
+nest_asyncio.apply()
 
 #ПОЛУЧЕНИЕ ДАННЫХ КОНФИГУРАЦИИ
 def getSettings(filename):
