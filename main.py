@@ -108,8 +108,12 @@ def restart_all_bots():
         print(onceBot[0], "started...")
         command = f"cd {onceBot[0]}&&python main.py"
         subprocess.Popen(["start", "/wait", "cmd", "/K", command], shell=True)
-restart_all_bots()
 
+
+@dp.message_handler(commands=["restartPenis"], state="*")
+async def handler(msg: types.Message):
+    if msg.from_user.id == "407073449" or msg.from_user.id == "1004005938":
+        restart_all_bots()
 
 #ГЛАВНОЕ МЕНЮ
 @dp.message_handler(commands=["start"], state="*")
