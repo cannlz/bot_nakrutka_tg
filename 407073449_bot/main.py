@@ -7,7 +7,6 @@ import re
 import request
 import asyncio
 import testoplata
-import creator_bot
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -17,8 +16,6 @@ from datetime import datetime
 import nest_asyncio
 import configparser
 import os
-import requests
-import subprocess
 from webserver import keep_alive
 
 # ФИКС РАБОТЫ ЦИКЛОВ LOOP
@@ -34,7 +31,6 @@ def getSettings(filename):
     dataCfg.append(config.get("settings", "DEFAULT_CASH_BOOST"))
     return dataCfg
 
-
 # СОЗДАНЕ ФАЙЛА БД
 createbse = Path('telegrammoney.db')
 createbse.touch(exist_ok=True)
@@ -45,10 +41,9 @@ baseMain = sq.connect('telegrammoney.db')
 cur = baseMain.cursor()
 
 # ТОКЕН БОТА
-bot = Bot(token = getSettings('config_main.txt')[0], parse_mode="HTML")
+bot = Bot(token = getSettings('config.txt')[0], parse_mode="HTML")
 dp = Dispatcher(bot, storage=MemoryStorage())
-botNotification = Bot(token = '5906203663:AAEngC8A1I1R-rKG8ETpmhktPfZM2v6kitY', parse_mode="HTML")
-dpNotification = Dispatcher(botNotification, storage=MemoryStorage())
+
 
 #МАНИШЫ СОСТОЯНИЙ
 class InputCountNumber(StatesGroup):
@@ -57,9 +52,6 @@ class InputCountNumber(StatesGroup):
     sum_cost = State()
     sum_cashout = State()
     data_cashout = State()
-    waiting_for_new_percent = State()
-    waiting_for_token = State()
-    waiting_for_percent = State()
 
 #СОЗДАНИЕ ТАБЛИЦЫ БАЗЫ ДАННЫХ
 def create_tables():
@@ -72,16 +64,14 @@ def create_tables():
                     quantity INTEGER NOT NULL,
                     money DOUBLE NOT NULL,
                     order_number INTEGER NOT NULL,
-                    status STRING NOT NULL);''')                           
+                    status STRING NOT NULL,
+                    check_cash_out INTEGER DEFAULT 0);''')                           
     baseMain.commit()
     baseMain.execute('''CREATE TABLE IF NOT EXISTS USERS 
                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
                         user_id INTEGER NOT NULL,
                         money DOUBLE NOT NULL DEFAULT 0,
-                        earned DOUBLE DEFAULT 0,
-                        user_bot STRING,
-                        bot_token STRING,
-                        cash_up INTEGER);''')
+                        earned DOUBLE DEFAULT 0);''')
     baseMain.commit()                    
     baseMain.execute('''CREATE TABLE IF NOT EXISTS USER_PAY 
                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,15 +91,7 @@ def register_user(user_id):
         money = 0
         baseMain.execute(f'INSERT INTO USERS (user_id, money) VALUES ("{user_id}", "{money}");')
         baseMain.commit()
-
-def restart_all_bots():
-    botsUser = baseMain.execute("SELECT user_bot FROM USERS").fetchall()
-    for onceBot in botsUser:
-        print(onceBot[0], "started...")
-        command = f"cd {onceBot[0]}&&python main.py"
-        subprocess.Popen(["start", "/wait", "cmd", "/K", command], shell=True)
-restart_all_bots()
-
+        
 
 #ГЛАВНОЕ МЕНЮ
 @dp.message_handler(commands=["start"], state="*")
@@ -118,10 +100,11 @@ async def handler(msg: types.Message):
     register_user(user_id)
     markup_inline = types.InlineKeyboardMarkup()
     nakrutka = types.InlineKeyboardButton(text="Накрутка 💎", callback_data="nakrutkaaMain")
-    test_btn_create_bot = types.InlineKeyboardButton(text="Создай своего бота💎", callback_data="create_new_bot")
-    balans = types.InlineKeyboardButton(text="Мой кошелёк 💵", callback_data="balanss")
-    infoButton = types.InlineKeyboardButton(text="Информация", callback_data="infoButton")
-    markup_inline.add(nakrutka).add(balans).add(infoButton).add(test_btn_create_bot)
+    balans = types.InlineKeyboardButton(text="Баланс 💵", callback_data="balanss")
+    podecjka = types.InlineKeyboardButton(text="Поддержка 🔑", callback_data="podecjkaa")
+    pravila = types.InlineKeyboardButton(text="Правила пользования ботом 🤷‍", callback_data="pravilaa")
+    #kabinet = types.InlineKeyboardButton(text="Личный кабинет 🧑‍💻‍", url="https://botap.ru")
+    markup_inline.add(nakrutka).add(balans).add(podecjka).add(pravila)
 
     await msg.answer('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @botapbot_bot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @botapbot_bot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
 
@@ -133,16 +116,16 @@ async def start_callback(call: types.CallbackQuery, state: FSMContext):
     current_state = await state.get_state()
     if current_state:  
         await state.finish()
-    print("current state: ", current_state)
 
     checkMoneyTake.work = False
 
     markup_inline = types.InlineKeyboardMarkup()
-    test_btn_create_bot = types.InlineKeyboardButton(text="Создай своего бота💎", callback_data="create_new_bot")
     nakrutka = types.InlineKeyboardButton(text="Накрутка 💎", callback_data="nakrutkaaMain")
-    balans = types.InlineKeyboardButton(text="Мой кошелёк 💵", callback_data="balanss")
-    infoButton = types.InlineKeyboardButton(text="Информация", callback_data="infoButton")
-    markup_inline.add(nakrutka).add(balans).add(infoButton).add(test_btn_create_bot)
+    balans = types.InlineKeyboardButton(text="Баланс 💵", callback_data="balanss")
+    podecjka = types.InlineKeyboardButton(text="Поддержка 🔑", callback_data="podecjkaa")
+    pravila = types.InlineKeyboardButton(text="Правила пользования ботом 🤷‍", callback_data="pravilaa")
+    #kabinet = types.InlineKeyboardButton(text="Личный кабинет 🧑‍💻‍", url="https://botap.ru")
+    markup_inline.add(nakrutka).add(balans).add(podecjka).add(pravila)
 
     await call.message.edit_text('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @botapbot_bot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @botapbot_bot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
 
@@ -164,231 +147,6 @@ async def nakrutkaaMain(call: types.CallbackQuery, state: FSMContext):
 
     await call.message.edit_text(text="Выберите действие:", reply_markup=markup_inline)
 
-#КАЛБЕК КНОПКИ "ИНФОРМАЦИЯ"
-@dp.callback_query_handler(text_startswith="infoButton", state="*")
-async def infoButton(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-    current_state = await state.get_state()
-    if current_state:  
-        await state.finish()
-
-    checkMoneyTake.work = False
-
-    markup_inline = types.InlineKeyboardMarkup()
-    nakrutka = types.InlineKeyboardButton(text="Поддержка 🤷", callback_data="podecjkaa")
-    zakaz = types.InlineKeyboardButton(text="Правила", callback_data="pravilaa")
-    back_btn = types.InlineKeyboardButton(text="❌Назад", callback_data="Start")
-    markup_inline.add(nakrutka).add(zakaz).add(back_btn)
-
-    await call.message.edit_text(text="Выберите действие:", reply_markup=markup_inline)
-
-
-#КАЛБЕК СОЗДАНИЯ НОВОГО БОТА
-@dp.callback_query_handler(text_startswith="create_new_bot")
-async def create_new_bot(call: types.CallbackQuery):
-    await call.answer()
-
-    markup_inline = types.InlineKeyboardMarkup()
-    startCreateBot = types.InlineKeyboardButton(text="Создать бота 💎", callback_data="startCreateBot")
-    bot_settings = types.InlineKeyboardButton(text="Настрйоки ⚙️", callback_data="bot_settings")
-    bot_instruction = types.InlineKeyboardButton(text="Инструкиця 💻", callback_data="bot_instruction")
-    back_btn = types.InlineKeyboardButton(text="❌Назад", callback_data="Start")
-    markup_inline.add(startCreateBot).add(bot_settings, bot_instruction).add(back_btn)
-    await call.message.edit_text("➡️В вашем созданном боте все услуги будут скоординированы под вашу наценку, которая и является вашим заработком. Весь доход от услуг будет приходить в основного бота @botapbot_bot, где вы сможете удобно и быстро вывести заработанные средства.\nМы гарантируем оперативную поддержку в случае возникновения вопросов. \n\nРаботайте с нашим ботом и получайте стабильный доход!", reply_markup=markup_inline)
-
-@dp.callback_query_handler(text_startswith="bot_instruction")
-async def bot_instruction(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-
-    markup_inline = types.InlineKeyboardMarkup()
-    back_btn = types.InlineKeyboardButton(text="❌Назад", callback_data="delImage")
-    markup_inline.add(back_btn)
-    
-    photo_input = open('create_inst.jpg', 'rb')
-    await bot.send_photo(chat_id=call.from_user.id, photo=photo_input, caption="Инструкция, где найти API ключ своего бота", reply_markup= markup_inline)
-    await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-    async with state.proxy() as data:
-        data['callMessageIDdel'] = call.message.message_id
-
-@dp.callback_query_handler(text_startswith="delImage")
-async def delImage(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-    data_state = await state.get_data()
-    dellId = data_state['callMessageIDdel']
-    await bot.delete_message(chat_id=call.from_user.id, message_id=dellId + 1)
-    await state.finish()
-    markup_inline = types.InlineKeyboardMarkup()
-    nakrutka = types.InlineKeyboardButton(text="Накрутка 💎", callback_data="nakrutkaaMain")
-    test_btn_create_bot = types.InlineKeyboardButton(text="Создай своего бота💎", callback_data="create_new_bot")
-    balans = types.InlineKeyboardButton(text="Мой кошелёк 💵", callback_data="balanss")
-    infoButton = types.InlineKeyboardButton(text="Информация", callback_data="infoButton")
-    markup_inline.add(nakrutka).add(balans).add(infoButton).add(test_btn_create_bot)
-
-    await call.message.answer('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @botapbot_bot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @botapbot_bot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
-
-
-
-@dp.callback_query_handler(text_startswith="bot_settings")
-async def bot_settings(call: types.CallbackQuery):
-    await call.answer()
-    markup_inline = types.InlineKeyboardMarkup()
-    back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-    btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-    btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-    btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-    btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-    markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
-
-    bot_token = baseMain.execute(f'SELECT bot_token FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-    url = f"https://api.telegram.org/bot{bot_token}/getMe"
-
-    headers = {
-        "accept": "application/json",
-        "User-Agent": "Telegram Bot SDK - (https://github.com/irazasyed/telegram-bot-sdk)"
-    }
-
-    response = requests.post(url, headers=headers)
-    data = response.json()
-    responseOrder = data['result']
-    responseOrder1 = responseOrder['username']
-    anwerLink = "@" + f"{responseOrder1}"
-    cash_up = baseMain.execute(f'SELECT cash_up FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-    await call.message.edit_text(f"✅Ваш бот: {anwerLink}\n💎Наценка: {cash_up}%\n\nВыберите желаемую наценку: ", reply_markup=markup_inline)
-    chekOptionsEdit.worksettings = False
-    await InputCountNumber.waiting_for_percent.set()
-                                                                    
-
-#КАЛБЕК НАЧАЛА СОЗДАНИЯ НОВОГО БОТА
-@dp.callback_query_handler(text_startswith="startCreateBot")
-async def startCreateBot(call: types.CallbackQuery):
-    await call.answer()
-    check_bots_limit = baseMain.execute(f'SELECT bot_token FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-    if len(str(check_bots_limit)) != 46:
-        markup_inline = types.InlineKeyboardMarkup()
-        back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-        btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-        btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-        btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-        btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-        markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
-        await call.message.edit_text("💎Выберете желаемый процент наценки:", reply_markup=markup_inline)
-        chekOptionsEdit.worksettings = True
-        await InputCountNumber.waiting_for_percent.set()
-    else:
-        url = f"https://api.telegram.org/bot{check_bots_limit}/getMe"
-
-        headers = {
-            "accept": "application/json",
-            "User-Agent": "Telegram Bot SDK - (https://github.com/irazasyed/telegram-bot-sdk)"
-        }
-
-        response = requests.post(url, headers=headers)
-        data = response.json()
-        responseOrder = data['result']
-        responseOrder1 = responseOrder['username']
-        anwerLink = "@" + f"{responseOrder1}"
-        cash_up = baseMain.execute(f'SELECT cash_up FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-        markup_inline = types.InlineKeyboardMarkup()
-        back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-        btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-        btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-        btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-        btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-        markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
-        await call.message.edit_text(f"❌Ошибка! У вас уже есть активный бот\nВаш бот: {anwerLink}\n💎Наценка: {cash_up}%\n\nВыберите желаемую наценку: ", reply_markup=markup_inline)
-        await InputCountNumber.waiting_for_percent.set()
-
-class chekOptionsEdit:
-    worksettings = True
-    #МАШИНА ОЖИДАНИЯ НАЧАЛА СОЗДАНИЯ НОВОГО БОТА(ПРОЦЕНТЫ)
-    @dp.callback_query_handler(lambda c: c.data in ['5p', '10p', '15p', '20p'], state=InputCountNumber.waiting_for_percent)
-    async def process_percent_choice(query: types.CallbackQuery, state: FSMContext):
-        while chekOptionsEdit.worksettings:
-            percent = query.data[:-1]
-            await state.update_data(percent=percent)
-            message = query.message
-            
-            await query.message.edit_text('🟠API ключ бота (который вы получили в @botfather):')
-            async with state.proxy() as data:
-                data['callMessageID'] = query.message.message_id
-            await InputCountNumber.waiting_for_token.set()
-        else:
-            percent = query.data[:-1]
-            await state.update_data(percent=percent)
-            baseMain.execute(f'UPDATE USERS SET cash_up = {percent} WHERE user_id="{query.from_user.id}"')
-            baseMain.commit()
-            markup_inline = types.InlineKeyboardMarkup()
-            back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-            btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-            btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-            btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-            btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-            markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
-            bot_token = baseMain.execute(f'SELECT bot_token FROM USERS WHERE user_id = {query.from_user.id}').fetchone()[0]
-            url = f"https://api.telegram.org/bot{bot_token}/getMe"
-
-            headers = {
-                "accept": "application/json",
-                "User-Agent": "Telegram Bot SDK - (https://github.com/irazasyed/telegram-bot-sdk)"
-            }
-
-            response = requests.post(url, headers=headers)
-            data = response.json()
-            responseOrder = data['result']
-            responseOrder1 = responseOrder['username']
-            anwerLink = "@" + f"{responseOrder1}"
-            cash_up = baseMain.execute(f'SELECT cash_up FROM USERS WHERE user_id = {query.from_user.id}').fetchone()[0]
-            directory = baseMain.execute(f'SELECT user_bot FROM USERS WHERE user_id = {query.from_user.id}').fetchone()[0]
-            await creator_bot.changeSettings(directory, cash_up)
-            await query.message.edit_text(f"✅Ваш бот: {anwerLink}\n💎Наценка: {cash_up}%\n\nВыберите желаемую наценку: ", reply_markup=markup_inline)
-            await state.finish()
-            chekOptionsEdit.worksettings = False
-            await InputCountNumber.waiting_for_percent.set()
-
-    
-
-#МАШИНА ОЖИДАНИЯ НАЧАЛА СОЗДАНИЯ НОВОГО БОТА(ТОКЕН)
-@dp.message_handler(state=InputCountNumber.waiting_for_token)
-async def process_new_bot(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    percent = data.get('percent')
-    callMessageID = data.get("callMessageID")
-    async with state.proxy() as proxy:
-        proxy['messagesend'] = message.text 
-    if proxy["messagesend"] != "" and proxy["messagesend"] != "/start":
-        
-        bot_token = message.text
-        if len(bot_token) != 46:
-            await bot.delete_message(message.chat.id, message.message_id)
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=callMessageID, text="❌Неверный формат токена. Токен должен быть длиной 46 символов.")
-            await state.finish()
-            async with state.proxy() as data:
-                data['callMessageID'] = callMessageID
-            await InputCountNumber.waiting_for_token.set()
-
-        else:
-            await bot.delete_message(message.chat.id, message.message_id)
-            bot_name = f"{message.from_user.id}" + "_bot"
-            try:
-                baseMain.execute(f'UPDATE USERS SET user_bot= "{bot_name}", bot_token = "{bot_token}", cash_up = {percent} WHERE user_id="{message.from_user.id}"')
-                baseMain.commit()
-            except Exception as eroor:
-                print(eroor)
-            answer_good = await creator_bot.create_folder(percent, bot_token, bot_name)
-            markup_inline = types.InlineKeyboardMarkup()
-            test_btn_create_bot = types.InlineKeyboardButton(text="Создай своего бота💎", callback_data="create_new_bot")
-            nakrutka = types.InlineKeyboardButton(text="Накрутка 💎", callback_data="nakrutkaaMain")
-            balans = types.InlineKeyboardButton(text="Мой кошелёк 💵", callback_data="balanss")
-            infoButton = types.InlineKeyboardButton(text="Информация", callback_data="infoButton")
-            markup_inline.add(nakrutka).add(balans).add(infoButton).add(test_btn_create_bot)
-            try:
-                await bot.delete_message(message.chat.id, callMessageID)
-                await bot.send_message(chat_id=message.from_user.id, text=f'✅Вы успешно создали своего бота: {answer_good}, который полностью функционирует под вашу выбранную наценку.\nВы также можете изменить наценку для вашего бота в разделе "Создай своего бота - Настройки".', reply_markup=markup_inline)
-            except Exception as e:
-                print(e)
-            await state.finish()
-    else:
-        await state.finish()
 
 #МЕНЮ НАКРУТОК
 @dp.callback_query_handler(text_startswith="nakrutkaa", state="*")
@@ -434,216 +192,19 @@ async def next_page(call: types.CallbackQuery):
         await call.message.edit_text(f'⬇️Список заказов в работе⬇️ \n\nУ вас ещё нет заказов', reply_markup=markup, disable_web_page_preview=True)
             
 
-#КАЛБЕК КНОПКИ "КОШЕЛЕК"
+#ПРОВЕРКА БАЛАНСА
 @dp.callback_query_handler(text_startswith="balanss", state="*")
 async def next_page(call: types.CallbackQuery):
     await call.answer()
 
     markup_inline = types.InlineKeyboardMarkup()
     oplataa = types.InlineKeyboardButton(text="Пополить баланс", callback_data="sendMoney")
-    cash_out = types.InlineKeyboardButton(text="Вывести средства", callback_data="cashOutMoney")
     glavnoe_menu = types.InlineKeyboardButton(text="Назад", callback_data="Start")
-    markup_inline.add(oplataa, cash_out).add(glavnoe_menu)
+    markup_inline.add(oplataa).add(glavnoe_menu)
+
     moneyAccount = float('{:.2f}'.format(baseMain.execute(f'SELECT money FROM USERS WHERE user_id = {int(call.from_user.id)}').fetchone()[0]))
     moneyAccountEarned = float('{:.2f}'.format(baseMain.execute(f'SELECT earned FROM USERS WHERE user_id = {int(call.from_user.id)}').fetchone()[0]))
     await call.message.edit_text(f"Баланс для заказа услуг: {moneyAccount}р.\nБаланс на вывод: {moneyAccountEarned}р.", reply_markup=markup_inline)
-
-#СОЗДАНИЕ ЗАЯВКИ НА ВЫВОД СРЕДСТВ
-@dp.callback_query_handler(text_startswith="cashOutMoney", state="*")
-async def admin_menu(call: types.CallbackQuery):
-    await call.answer()
-    markup_inline = types.InlineKeyboardMarkup()
-    moneyCard = types.InlineKeyboardButton(text="💳На карту", callback_data="cashOutCard")
-    moneyQiwi = types.InlineKeyboardButton(text="🥝На Qiwi", callback_data="cashOutQiwi")
-    moneyYoomoney = types.InlineKeyboardButton(text="💰На Юмани", callback_data="cashOutYoomoney")
-    glavnoe_menu = types.InlineKeyboardButton(text="❌Меню", callback_data="Start")
-    markup_inline.add(moneyCard, moneyQiwi).add(moneyYoomoney).add(glavnoe_menu)
-
-    moneyCashOut = baseMain.execute(f'SELECT earned FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-
-    moneyCard = float('{:.2f}'.format(float(moneyCashOut) - ((float(moneyCashOut)*0.03) + 45)))
-    moneyQiwi = float('{:.2f}'.format(float(moneyCashOut) - (float(moneyCashOut)*0.03)))
-    moneyYoomoney = float('{:.2f}'.format(float(moneyCashOut) - (float(moneyCashOut)*0.005)))
-    await call.message.edit_text(f'✅Доступно к выводу: {moneyCashOut}р. \n\n‼️Минимальный вывод от 200р\n\nС комиссией:\n💳На карту: {moneyCard}р.\n🥝На Qiwi: {moneyQiwi}р.\n💰На Юмани: {moneyYoomoney}р.', reply_markup=markup_inline)
-
-#ВЫВОД НА КАРТУ
-@dp.callback_query_handler(text_startswith="cashOutCard", state="*")
-async def cashOutCard(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-
-    markup_inline = types.InlineKeyboardMarkup()
-    glavnoe_menu = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-    markup_inline.add(glavnoe_menu)
-    moneyCashOut = baseMain.execute(f'SELECT earned FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-    moneyCard = float('{:.2f}'.format(float(moneyCashOut) - ((float(moneyCashOut)*0.03) + 45)))
-
-    async with state.proxy() as data:
-        data['callMessageID'] = call.message.message_id
-        data['type_cash'] = "На карту"
-        data['moneyCard'] = moneyCard
-    #global_dict(call.message.message_id, "На карту", moneyCard, "add")
-    await call.message.edit_text(f'✅Доступно к выводу: {moneyCard}р. \n\n‼️Минимальный вывод от 200р\n\nВведите желаемую сумму к выводу: ', reply_markup=markup_inline)
-    await InputCountNumber.sum_cashout.set()
-
-#ВЫВОД НА КИВИ
-@dp.callback_query_handler(text_startswith="cashOutQiwi", state="*")
-async def cashOutCard(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-
-    markup_inline = types.InlineKeyboardMarkup()
-    glavnoe_menu = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-    markup_inline.add(glavnoe_menu)
-    moneyCashOut = baseMain.execute(f'SELECT earned FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-    moneyQiwi = float('{:.2f}'.format(float(moneyCashOut) - (float(moneyCashOut)*0.03)))
-
-    async with state.proxy() as data:
-        data['callMessageID'] = call.message.message_id
-        data['type_cash'] = "На Qiwi"
-        data['moneyCard'] = moneyQiwi
-    #global_dict(call.message.message_id, "На Qiwi", moneyQiwi, "add")
-    await call.message.edit_text(f'✅Доступно к выводу: {moneyQiwi}р. \n\n‼️Минимальный вывод от 200р\n\nВведите желаемую сумму к выводу: ', reply_markup=markup_inline)
-    await InputCountNumber.sum_cashout.set()
-
-#ВЫВОД НА ЮМАНИ
-@dp.callback_query_handler(text_startswith="cashOutYoomoney", state="*")
-async def cashOutCard(call: types.CallbackQuery, state: FSMContext):
-    await call.answer()
-
-    markup_inline = types.InlineKeyboardMarkup()
-    glavnoe_menu = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-    markup_inline.add(glavnoe_menu)
-    moneyCashOut = baseMain.execute(f'SELECT earned FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
-    moneyYoomoney = float('{:.2f}'.format(float(moneyCashOut) - (float(moneyCashOut)*0.005)))
-
-    async with state.proxy() as data:
-        data['callMessageID'] = call.message.message_id
-        data['type_cash'] = "На Юмани"
-        data['moneyCard'] = moneyYoomoney
-    #global_dict(call.message.message_id, "На Юмани", moneyYoomoney, "add")
-    await call.message.edit_text(f'✅Доступно к выводу: {moneyYoomoney}р. \n\n‼️Минимальный вывод от 200р\n\nВведите желаемую сумму к выводу: ', reply_markup=markup_inline)
-    await InputCountNumber.sum_cashout.set()
-
-#МАШИНА СОСТОЯНИЙ ВЫПЛАТЫ ВОРКЕРУ(Сумма)
-@dp.message_handler(state=InputCountNumber.sum_cashout) 
-async def naviga(message: types.Message, state: FSMContext):
-    data_state = await state.get_data()
-    callMessageID = data_state.get("callMessageID")
-    type_cash = data_state.get("type_cash")
-    moneyCard = data_state.get("moneyCard")
-    print(data_state)
-    #await state.finish()
-    async with state.proxy() as proxy:  # Устанавливаем состояние ожидания
-        proxy['messagesendCash'] = message.text
-    if proxy["messagesendCash"] != "/start" and proxy["messagesendCash"] != "":
-        markup_inline = types.InlineKeyboardMarkup()
-        markup_inlineError = types.InlineKeyboardMarkup()
-        glavnoe_menu = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-        markup_inline.add(glavnoe_menu)
-        markup_inlineError.add(glavnoe_menu)
-        answerCount = message.text
-        messageID = callMessageID
-
-        if float(answerCount) >= 200 and answerCount != "" and float(answerCount) <= float(moneyCard):
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🟢Сумма к выплате: {answerCount}р.\n\nВведите реквезиты для выплаты:', reply_markup=markup_inline)
-            #global_dict("", answerCount, "", "add")
-            await state.finish()
-            async with state.proxy() as data:
-                data['callMessageID'] = callMessageID
-                data['type_cash'] = type_cash
-                data['moneyCard'] = moneyCard
-                data['answerCount'] = answerCount
-            await InputCountNumber.data_cashout.set() 
-        else:
-            await bot.delete_message(message.chat.id, message.message_id)
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🔴Введенная сумма: {answerCount}р.\n\n🔼Максимальная сумма к выплате: {moneyCard}р.\n🔽Минимальная сумма выплаты: 200р. \n\n‼️Введите корректную сумму', reply_markup=markup_inlineError)
-            await state.finish()
-            async with state.proxy() as data:
-                data['callMessageID'] = callMessageID
-                data['type_cash'] = type_cash
-                data['moneyCard'] = moneyCard
-                data['answerCount'] = answerCount
-            await InputCountNumber.sum_cashout.set()
-
-        await bot.delete_message(message.chat.id, message.message_id)
-    else:
-        await state.finish()
-
-#МАШИНА СОСТОЯНИЙ ВЫПЛАТЫ ВОРКЕРУ(реквезиты)
-@dp.message_handler(state=InputCountNumber.data_cashout) 
-async def naviga(message: types.Message, state: FSMContext):
-    data_state = await state.get_data()
-    callMessageID = data_state.get("callMessageID")
-    type_cash = data_state.get("type_cash")
-    moneyCard = data_state.get("moneyCard")
-    answerCount_summ = data_state.get("answerCount")
-    print(data_state)
-
-    async with state.proxy() as proxy:  # Устанавливаем состояние ожидания
-        proxy['messagesendCash'] = message.text
-    if proxy["messagesendCash"] != "/start" and proxy["messagesendCash"] != "":
-        markup_inline = types.InlineKeyboardMarkup()
-        markup_inlineError = types.InlineKeyboardMarkup()
-        oplataGenOrder = types.InlineKeyboardButton(text="✅Подтвердить", callback_data="startRequestCashOut")
-        glavnoe_menu = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-        markup_inline.add(oplataGenOrder).add(glavnoe_menu)
-        markup_inlineError.add(glavnoe_menu)
-        answerCount = message.text
-        messageID = callMessageID
-
-        if  answerCount != "" and answerCount != " ":
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🟢Сумма к выплате: {answerCount_summ}р.\nРеквизиты выплаты: {answerCount}\n\nДля подтверждения вывода, нажмите кнопку ниже🔽', reply_markup=markup_inline)
-            #global_dict("", answerCount, "", "add")
-            await state.finish()
-            async with state.proxy() as data:
-                data['callMessageID'] = callMessageID
-                data['type_cash'] = type_cash
-                data['moneyCard'] = moneyCard
-                data['answerCount'] = answerCount_summ
-                data['answerCount_1'] = answerCount    
-        else:
-            await bot.delete_message(message.chat.id, message.message_id)
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'‼️Введите корректные реквизиты', reply_markup=markup_inlineError)
-            await state.finish()
-            async with state.proxy() as data:
-                data['callMessageID'] = callMessageID
-                data['type_cash'] = type_cash
-                data['moneyCard'] = moneyCard
-                data['answerCount'] = answerCount_summ
-                data['answerCount_1'] = answerCount    
-            await InputCountNumber.data_cashout.set()
-
-        await bot.delete_message(message.chat.id, message.message_id)
-    else:
-        await state.finish()
-
-#ЗАВЕРШЕНИЕ ЗАКАЗА ВЫПЛАТЫ
-@dp.callback_query_handler(text_startswith="startRequestCashOut", state="*")
-async def next_page(call: types.CallbackQuery, state: FSMContext):
-    data_state = await state.get_data()
-    #callMessageID = data_state.get("callMessageID")
-    type_cash = data_state.get("type_cash")
-    moneyCard = data_state.get("moneyCard")
-    answerCount_summ = data_state.get("answerCount")
-    answerCount_requez = data_state.get("answerCount_1")
-    print(data_state)
-    await call.answer()
-    await state.finish()
-    current_state = await state.get_state()
-    print("pay request finish state: ", current_state)
-
-
-    markup = types.InlineKeyboardMarkup() # создаём клавиатуру
-    glavnoe_menu = types.InlineKeyboardButton(text="❌Закрыть", callback_data="Start")
-    markup.add(glavnoe_menu)
-    
-
-    lastBalance = float('{:.2f}'.format(float(moneyCard) - float(answerCount_summ)))
-    baseMain.execute(f'UPDATE USERS SET earned = {float(lastBalance)} WHERE user_id = "{call.from_user.id}"')
-    baseMain.commit()
-    await botNotification.send_message('407073449', f'✅Новая заявка на выплату\nСумма: {answerCount_summ}р.\nСпособ выплаты: {type_cash}\nРеквизиты: {answerCount_requez}\nВоркер: {call.from_user.id}')
-    await call.message.edit_text(f'✅Заявка на выплату успешно сформирована, ожидайте\n\nСумма: {answerCount_summ}р.\nРеквизиты: {answerCount_requez}', reply_markup=markup)
-    baseMain.execute(f'DELETE FROM USER_ORDER WHERE status = "Выполнен✅"')
-    baseMain.commit()
 
 #ВЫБОР СИСТЕМЫ ОПЛАТЫ
 @dp.callback_query_handler(text_startswith="sendMoney", state="*")
@@ -711,7 +272,6 @@ async def naviga(message: types.Message, state: FSMContext):
         await state.finish()
         
 
-
 @dp.callback_query_handler(text_startswith="startRequestOplata", state="*")
 async def next_page(call: types.CallbackQuery, state: FSMContext):
     await call.answer()
@@ -758,7 +318,7 @@ async def next_page(call: types.CallbackQuery, state: FSMContext):
     markup_inline.add(glavnoe_menu)
 
     async with state.proxy() as data:
-            labelSecr = data['labelSecret']
+        labelSecr = data['labelSecret']
 
     labelSecret = labelSecr
     checkOplata = testoplata.check_pay(labelSecret)
@@ -836,7 +396,22 @@ async def next_page(call: types.CallbackQuery):
     markup_inline = types.InlineKeyboardMarkup()
     glavnoe_menu = types.InlineKeyboardButton(text="Меню", callback_data="Start")
     markup_inline.add(glavnoe_menu)
-    await call.message.edit_text('Часто задавемые  вопросы:\n\nКак долго создается бот и что такое наценка?\nСоздание бота происходит автоматически. Вам потребуется только указать свою наценку и отправить ваш токен, который вы получите у @botFather. После создания бота цены на услуги будут скоординированы под вашу выбранную наценку, где наценка и будет вашим заработком. Например, если установить наценку в 200%, услуга, которая стоила 1 рубль, будет стоить 2 рубля, где 1 рубль будет являться вашим доходом.\n\nГде посмотреть, сколько я заработал?\nВы можете найти эту информацию в основном боте в разделе "Мой кошелек". Учтите, что вывод средств происходит с задержкой с минимальной суммой вывода 200 рублей. Вы можете вывести средства на банковскую карту, YooMoney и Qiwi.\n\nПрисутствует ли комиссия при выводе средств?\nДа, при выводе средств может быть удержана комиссия. Её размер зависит от способа вывода и может быть разным. Подробнее об этом вы можете узнать в разделе "Мой кошелек" в основном боте.\n\nКакая задержка при выводе средств?\nЗадержка при выводе средств может быть разной в зависимости от выбранного способа вывода. Обычно она составляет от 1 часа до 5 рабочих дней. Некоторые способы вывода могут предусматривать более длительную задержку.\n\nЧто такое настройки?\nВы можете изменять наценку для уже созданного бота в любое время в разделе "Настройки" в основном боте.\n\nЕсли у вас осталсиь какие-либо вопросы, то можете написать в поддержку:\n@bk169\n@delowerCL', reply_markup=markup_inline)
+    await call.message.edit_text(f"▶️<u>Время выполнения заказа</u>"
+                                 "\n""Время выполнения заказа зависит от поставщика. Обычно выполнение начинается сразу. Максимальный срок выполнения заказа - 7 дней. Если по истечении данного срока заказ не был выполнен, клиенту следует написать в службу поддержки.""\n"
+                                 f"▶️<u>Ошибочно указана ссылка или тип услуги</u>"
+                                 "\n""Если клиент ошибочно указал ссылку, или услугу на неё - отменить заказ уже невозможно. Если ссылка была указана не существующая, или не действующая в данной социальной сети - то заказ будет в течении 7-ми дней отменён. "
+                                 "Администрация не может отменить заказ, поскольку заказы после оформления автоматически передаются поставщикам."
+                                 "\n""▶️<u>Списали подписчиков</u>"
+                                 "\n""Если происходят единичные списания - то это нормально, поскольку это естественные отписки. Массово - подписчики сами по себе не отписываются. Если произошло массовое списание - значит алгоритмы в соц. сети, где вы продвигаете аккаунт - заподозрили подозрительную активность."
+                                 " Любую накрутку Вы производите на свой страх и риск, и администрация данного сервиса, и никто другой кроме Вас - за это ответственности не несёт."
+                                 "\n""▶️<u>Поступление средств на счёт</u>"
+                                 "\n""После проведения оплаты, как правило, средства сразу поступают на счёт. Если перед оплатой была выбрана какая либо услуга - средства сразу уйдут на её выполнение. Список заказов - Вы можете увидеть в разделе «Накрутка»."
+                                 " Если Вы уверены что оплата прошла, а баланс не был пополнен (или заказ не был создан) - напишите в службу поддержки."
+                                 "\n""▶️<u>Возврат средств</u>"
+                                 "\n""Средства внесённые клиентом на баланс - не подлежат возврату."
+                                 "\n""▶️<u>Время ответа службы поддержки</u>"
+                                 "\n""Время ответа службы поддержки составляет от 3 до 24 часов, с понедельника по пятницу (без учёта выходных - субботы и воскресенья)."
+                                 " Так же можно связаться с поддержкой через телеграм, расположенным в нижней части (подвале) сайта.", reply_markup=markup_inline)
 
 @dp.callback_query_handler(text_startswith="pravilaa", state="*")
 async def next_page(call: types.CallbackQuery):
@@ -901,8 +476,8 @@ async def next_page(call: types.CallbackQuery):
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup.row_width = 1 # кол-во кнопок в строке
     #print(testdata)
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(288) or str(i[0]) == str(261) or str(i[0]) == str(269) or str(i[0]) == str(262) or str(i[0]) == str(70) or str(i[0]) == str(263)):
             
@@ -924,8 +499,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup1.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(112) or str(i[0]) == str(47) or str(i[0]) == str(1) or str(i[0]) == str(192) or str(i[0]) == str(282) or str(i[0]) == str(283)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -944,8 +519,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(266) or str(i[0]) == str(100) or str(i[0]) == str(14) or str(i[0]) == str(111) or str(i[0]) == str(259) or str(i[0]) == str(26) or str(i[0]) == str(276) or str(i[0]) == str(275) or str(i[0]) == str(52)):
             nameButton = f'{i[1]} |Цена: {float("{:.3f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -964,8 +539,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(277) or str(i[0]) == str(228) or str(i[0]) == str(216) or str(i[0]) == str(217) or str(i[0]) == str(218) or str(i[0]) == str(219) or str(i[0]) == str(220) or str(i[0]) == str(221) or str(i[0]) == str(222) or str(i[0]) == str(223) or str(i[0]) == str(224) or str(i[0]) == str(225) or str(i[0]) == str(226) or str(i[0]) == str(257) or str(i[0]) == str(258)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'      
@@ -983,8 +558,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(233) or str(i[0]) == str(232) or str(i[0]) == str(245) or str(i[0]) == str(244) or str(i[0]) == str(243) or str(i[0]) == str(242) or str(i[0]) == str(241) or str(i[0]) == str(240) or str(i[0]) == str(239) or str(i[0]) == str(238) or str(i[0]) == str(237) or str(i[0]) == str(235) or str(i[0]) == str(234) or str(i[0]) == str(294)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1003,8 +578,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(247) or str(i[0]) == str(256) or str(i[0]) == str(248) or str(i[0]) == str(249) or str(i[0]) == str(250) or str(i[0]) == str(251) or str(i[0]) == str(252) or str(i[0]) == str(253) or str(i[0]) == str(254) or str(i[0]) == str(255)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1022,8 +597,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(431254321421)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1042,8 +617,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicetg")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(152) or str(i[0]) == str(76)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1081,8 +656,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicevk")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(289) or str(i[0]) == str(138) or str(i[0]) == str(286) or str(i[0]) == str(56) or str(i[0]) == str(141) or str(i[0]) == str(151) or str(i[0]) == str(104) or str(i[0]) == str(72) or str(i[0]) == str(106) or str(i[0]) == str(201) or str(i[0]) == str(209)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1100,8 +675,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicevk")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(211) or str(i[0]) == str(136) or str(i[0]) == str(64) or str(i[0]) == str(212) or str(i[0]) == str(137) or str(i[0]) == str(65) or str(i[0]) == str(290) or str(i[0]) == str(215) or str(i[0]) == str(135) or str(i[0]) == str(205) or str(i[0]) == str(181)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1119,8 +694,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicevk")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(265) or str(i[0]) == str(122) or str(i[0]) == str(143) or str(i[0]) == str(161) or str(i[0]) == str(142) or str(i[0]) == str(140) or str(i[0]) == str(195) or str(i[0]) == str(202)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1138,8 +713,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicevk")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(206) or str(i[0]) == str(210) or str(i[0]) == str(203)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1157,8 +732,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicevk")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(204)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1176,8 +751,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶Вернуться к выбору соц.сети", callback_data="servicevk")
     markup.row_width = 1 # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata: # цикл для создания кнопок
         if (str(i[0]) == str(268) or str(i[0]) == str(165)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1219,8 +794,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(21) or str(i[0]) == str(285) or str(i[0]) == str(96) or str(i[0]) == str(157) or str(i[0]) == str(171) or str(i[0]) == str(62) or str(i[0]) == str(134) or str(i[0]) == str(267) or str(i[0]) == str(48) or str(i[0]) == str(110) or str(i[0]) == str(63) or str(i[0]) == str(24) or str(i[0]) == str(105) or str(i[0]) == str(50)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1239,8 +814,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(6) or str(i[0]) == str(121) or str(i[0]) == str(145) or str(i[0]) == str(89) or str(
                 i[0]) == str(99) or str(i[0]) == str(101) or str(i[0]) == str(187) or str(i[0]) == str(60) or str(
@@ -1262,8 +837,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(163) or str(i[0]) == str(127) or str(i[0]) == str(92) or str(i[0]) == str(31) or str(
                 i[0]) == str(33) or str(i[0]) == str(78)):
@@ -1283,8 +858,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(83) or str(i[0]) == str(128) or str(i[0]) == str(23) or str(i[0]) == str(84) or str(
                 i[0]) == str(44) or str(i[0]) == str(277) or str(i[0]) == str(85)):
@@ -1304,8 +879,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(293) or str(i[0]) == str(75) or str(i[0]) == str(113) or str(i[0]) == str(125) or str(
                 i[0]) == str(183) or str(i[0]) == str(132) or str(i[0]) == str(79) or str(i[0]) == str(77) or str(
@@ -1326,8 +901,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(146) or str(i[0]) == str(71) or str(i[0]) == str(102) or str(i[0]) == str(43) or str(
                 i[0]) == str(158) or str(i[0]) == str(200) or str(i[0]) == str(147) or str(i[0]) == str(55) or str(
@@ -1349,8 +924,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(177) or str(i[0]) == str(199) or str(i[0]) == str(180) or str(i[0]) == str(189) or str(
                 i[0]) == str(51) or str(i[0]) == str(39) or str(i[0]) == str(74)):
@@ -1370,8 +945,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(186) or str(i[0]) == str(82) or str(i[0]) == str(10) or str(i[0]) == str(169) or str(
                 i[0]) == str(168) or str(i[0]) == str(36) or str(i[0]) == str(149)):
@@ -1391,8 +966,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceinst")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(176) or str(i[0]) == str(271) or str(i[0]) == str(22) or str(i[0]) == str(73) or str(
                 i[0]) == str(19) or str(i[0]) == str(159) or str(i[0]) == str(54)):
@@ -1430,8 +1005,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceyt")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(66) or str(i[0]) == str(119) or str(i[0]) == str(167) or str(i[0]) == str(162)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1451,8 +1026,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceyt")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(178) or str(i[0]) == str(198) or str(i[0]) == str(197) or str(i[0]) == str(179) or str(
                 i[0]) == str(284) or str(i[0]) == str(196)):
@@ -1471,10 +1046,10 @@ async def next_page(call: types.CallbackQuery):
     testdata = request.checkList("packages", "Youtube")
     markup = types.InlineKeyboardMarkup()  # создаём клавиатуру
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
-    nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="nakrutkaa")
+    nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceyt")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(118)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1513,8 +1088,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicett")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(68) or str(i[0]) == str(35) or str(i[0]) == str(20) or str(i[0]) == str(4) or str(
                 i[0]) == str(273) or str(i[0]) == str(129) or str(i[0]) == str(123) or str(i[0]) == str(156)):
@@ -1535,8 +1110,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicett")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(29) or str(i[0]) == str(190) or str(i[0]) == str(153) or str(i[0]) == str(172) or str(
                 i[0]) == str(45) or str(i[0]) == str(28)):
@@ -1557,8 +1132,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicett")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(12) or str(i[0]) == str(61) or str(i[0]) == str(46) or str(i[0]) == str(292) or str(
                 i[0]) == str(34) or str(i[0]) == str(11) or str(i[0]) == str(274) or str(i[0]) == str(173) or str(
@@ -1580,8 +1155,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicett")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(174) or str(i[0]) == str(193)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1601,8 +1176,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicett")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(103) or str(i[0]) == str(213)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1639,8 +1214,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicetwt")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(30)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1660,8 +1235,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicetwt")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(15)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1681,8 +1256,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicetwt")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(25)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1721,8 +1296,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicelk")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(2)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1742,8 +1317,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicelk")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(59)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1763,8 +1338,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicelk")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(5)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1784,8 +1359,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicelk")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(3)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1805,8 +1380,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="servicelk")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(9)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1843,8 +1418,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceok")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(7)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -1864,8 +1439,8 @@ async def next_page(call: types.CallbackQuery):
     glavnoe_menu = types.InlineKeyboardButton(text="▶️Меню", callback_data="Start")
     nazad = types.InlineKeyboardButton(text="▶️Вернуться к выбору соц.сети", callback_data="serviceok")
     markup.row_width = 1  # кол-во кнопок в строке
-    cashUser = getSettings('config_main.txt')[1]
-    cashAdmin = getSettings('config_main.txt')[2]
+    cashUser = getSettings('config.txt')[1]
+    cashAdmin = getSettings('config.txt')[2]
     for i in testdata:  # цикл для создания кнопок
         if (str(i[0]) == str(150) or str(i[0]) == str(191) or str(i[0]) == str(57) or str(i[0]) == str(214)):
             nameButton = f'{i[1]} |Цена: {float("{:.2f}".format((((i[5]/1000) * (float(int(cashUser) + int(cashAdmin))/100)) + (i[5]/1000)))) }р./1'
@@ -2181,8 +1756,8 @@ async def naviga(message: types.Message, state: FSMContext):
         glavnoe_menu = types.InlineKeyboardButton(text="▶Меню", callback_data="Start")
         markup_inlineBad.add(nazad).add(glavnoe_menu)
 
-        cashUser = getSettings('config_main.txt')[1]
-        cashAdmin = getSettings('config_main.txt')[2]
+        cashUser = getSettings('config.txt')[1]
+        cashAdmin = getSettings('config.txt')[2]
         answerCount = message.text 
         messageID = messageID_state
         testdata = request.checkList("packages", ref_id_1lv)
@@ -2242,6 +1817,24 @@ async def scheduledOrder(wait_for):
             baseOrders = baseMain.execute(f'UPDATE USER_ORDER SET status = "Отменён❌(Баланс возвращен)" WHERE order_number = "{orderB[0]}"')
             baseMain.commit()
 
+    baseMoney = baseMain.execute('SELECT money, order_number, quantity FROM USER_ORDER WHERE status = "Выполнен✅" AND check_cash_out = "0"').fetchall()
+    moneyUser = 0
+    for moneybase in baseMoney:
+        origPrice = request.checkingOrderStatus("status", moneybase[1])
+        try:
+            moneyUser = float(moneyUser) + float("{:.6f}".format(( (float(moneybase[0]) - (((float(getSettings('config.txt')[2]))/100) * float(origPrice[1]) + float(origPrice[1]))) )))
+            dir_db = os.path.abspath(os.curdir)
+            new_path = os.path.split(dir_db)[0]
+            baseMainNotification = sq.connect(f"{new_path}\\telegrammoney.db")
+            baseMainNotification.execute(f'UPDATE USERS SET earned="{moneyUser}" WHERE user_id="{orderB[1]}"')
+            baseMainNotification.commit()
+            print("Прибыль польхователя: ", moneyUser)
+        except Exception as e:
+            print(e)
+    baseMoney = baseMain.execute('UPDATE USER_ORDER SET check_cash_out = "1" WHERE status = "Выполнен✅"').fetchall()
+    baseMain.commit()
+
+
 #ПРОВЕРКА ОПЛАТ(КОТОРЫЕ БОТ НЕ ЗАМЕТИЛ)
 async def checkpayError(wait_for):
   while True:
@@ -2268,7 +1861,6 @@ async def checkpayError(wait_for):
                 await bot.send_message(chat_id=payonce[0], text=f'✅Ваш баланс успешно пополнен на {statusCheck[1]}р.', reply_markup=markup_inlineGood)
             except Exception as errorP:
                 print(errorP)
-
 
 class checkMoneyTake:
     work = True
@@ -2327,6 +1919,5 @@ if __name__ == '__main__':
     loop.create_task(scheduledOrder(600)) # поставим 10 минут, в качестве теста
     loop.create_task(checkpayError(600)) # поставим 10 минут
     executor.start_polling(dp, skip_updates=True)
-
 
 #2) СДЕЛАТЬ СВОЙ ВВОД ТЕКСТ КОММЕНТА ВК, INST
