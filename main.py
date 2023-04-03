@@ -719,7 +719,7 @@ async def next_page(call: types.CallbackQuery, state: FSMContext):
     await call.message.edit_text(f'Пополнение баланса на: {sumAddCash}р.\n\nС учётом комисии: {summComissiaBD}р.\n\n⏳Время на оплату: 15 минут \n\nДля пополнения баланса, нажмите на кнопку: "Перейти на страницу оплаты"', reply_markup=markup_inline)
     loops = asyncio.get_event_loop()
     checkMoneyTake.work = True
-    loops.run_until_complete(checkMoneyTake.scheduledOplata(5, call.from_user.id, call.message.message_id)) # авточек баланса(пополнение)
+    await loops.run_until_complete(checkMoneyTake.scheduledOplata(5, call.from_user.id, call.message.message_id)) # авточек баланса(пополнение)
 
         
 
