@@ -1,0 +1,5 @@
+[settings]
+BOT_TOKEN = none
+CASH_BOOST_USER = 5
+DEFAULT_CASH_BOOST = 15
+
