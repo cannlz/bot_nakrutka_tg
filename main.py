@@ -111,9 +111,11 @@ def restart_all_bots():
 
 
 @dp.message_handler(commands=["restartPenis"], state="*")
-async def handler(msg: types.Message):
-    if msg.from_user.id == "407073449" or msg.from_user.id == "1004005938":
+async def handler_search(msg: types.Message):
+    if msg.from_user.id == 407073449 or msg.from_user.id == 1004005938:
+        print("BOTS RESTARTED")
         restart_all_bots()
+        await bot.send_message(chat_id=msg.from_user.id, text="Боты были перезапущены")
 
 #ГЛАВНОЕ МЕНЮ
 @dp.message_handler(commands=["start"], state="*")
