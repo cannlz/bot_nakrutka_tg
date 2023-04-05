@@ -98,15 +98,25 @@ def register_user(user_id):
 async def handler(msg: types.Message):
     user_id = msg.from_user.id
     register_user(user_id)
+
     markup_inline = types.InlineKeyboardMarkup()
+    markup_inline_prem = types.InlineKeyboardMarkup()
     nakrutka = types.InlineKeyboardButton(text="Накрутка 💎", callback_data="nakrutkaaMain")
     balans = types.InlineKeyboardButton(text="Баланс 💵", callback_data="balanss")
     podecjka = types.InlineKeyboardButton(text="Поддержка 📚", callback_data="podecjkaa")
     pravila = types.InlineKeyboardButton(text="Правила пользования ботом 🤷‍", callback_data="pravilaa")
-    #kabinet = types.InlineKeyboardButton(text="Личный кабинет 🧑‍💻‍", url="https://botap.ru")
-    markup_inline.add(nakrutka).add(balans).add(podecjka).add(pravila)
+    kabinet = types.InlineKeyboardButton(text="Заработай на своём боте💰", url="https://t.me/botapbot_bot")
+    markup_inline.add(nakrutka, balans).add(podecjka, pravila).add(kabinet)
+    markup_inline_prem.add(nakrutka, balans).add(podecjka, pravila)
 
-    await msg.answer('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @botapbot_bot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @botapbot_bot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
+    dir_db = os.path.abspath(os.curdir)
+    new_path = os.path.split(dir_db)[0]
+    baseMainNotification = sq.connect(f"{new_path}/telegrammoney.db")
+    basePays = baseMainNotification.execute(f'SELECT money FROM USERS WHERE user_id = {msg.from_user.id}').fetchone()[0]
+    if basePays > 150:
+        await msg.answer('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\nВыберите действие:', reply_markup=markup_inline_prem)
+    else:
+        await msg.answer('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\nБот создан с помощью сервиса @botapbot_bot.\n\nВыберите действие:', reply_markup=markup_inline)
 
 
 #КАЛБЕК ГЛАВНОГО МЕНЮ
@@ -120,14 +130,23 @@ async def start_callback(call: types.CallbackQuery, state: FSMContext):
     checkMoneyTake.work = False
 
     markup_inline = types.InlineKeyboardMarkup()
+    markup_inline_prem = types.InlineKeyboardMarkup()
     nakrutka = types.InlineKeyboardButton(text="Накрутка 💎", callback_data="nakrutkaaMain")
     balans = types.InlineKeyboardButton(text="Баланс 💵", callback_data="balanss")
     podecjka = types.InlineKeyboardButton(text="Поддержка 📚", callback_data="podecjkaa")
     pravila = types.InlineKeyboardButton(text="Правила пользования ботом 🤷‍", callback_data="pravilaa")
-    #kabinet = types.InlineKeyboardButton(text="Личный кабинет 🧑‍💻‍", url="https://botap.ru")
-    markup_inline.add(nakrutka).add(balans).add(podecjka).add(pravila)
+    kabinet = types.InlineKeyboardButton(text="Заработай на своём боте💰", url="https://t.me/botapbot_bot")
+    markup_inline.add(nakrutka, balans).add(podecjka, pravila).add(kabinet)
+    markup_inline_prem.add(nakrutka, balans).add(podecjka, pravila)
 
-    await call.message.edit_text('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @botapbot_bot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @botapbot_bot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
+    dir_db = os.path.abspath(os.curdir)
+    new_path = os.path.split(dir_db)[0]
+    baseMainNotification = sq.connect(f"{new_path}/telegrammoney.db")
+    basePays = baseMainNotification.execute(f'SELECT money FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
+    if basePays > 150:
+        await call.message.edit_text('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\nВыберите действие:', reply_markup=markup_inline_prem)
+    else:
+        await call.message.edit_text('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\nБот создан с помощью сервиса @botapbot_bot.\n\nВыберите действие:', reply_markup=markup_inline)
 
 #КАЛБЕК КНОПКИ "НАКРУТКА"
 @dp.callback_query_handler(text_startswith="nakrutkaaMain", state="*")
@@ -198,13 +217,13 @@ async def next_page(call: types.CallbackQuery):
     await call.answer()
 
     markup_inline = types.InlineKeyboardMarkup()
-    oplataa = types.InlineKeyboardButton(text="Пополить баланс", callback_data="sendMoney")
+    oplataa = types.InlineKeyboardButton(text="Пополнить баланс", callback_data="sendMoney")
     glavnoe_menu = types.InlineKeyboardButton(text="Назад", callback_data="Start")
     markup_inline.add(oplataa).add(glavnoe_menu)
 
     moneyAccount = float('{:.2f}'.format(baseMain.execute(f'SELECT money FROM USERS WHERE user_id = {int(call.from_user.id)}').fetchone()[0]))
     moneyAccountEarned = float('{:.2f}'.format(baseMain.execute(f'SELECT earned FROM USERS WHERE user_id = {int(call.from_user.id)}').fetchone()[0]))
-    await call.message.edit_text(f"Баланс для заказа услуг: {moneyAccount}р.\nБаланс на вывод: {moneyAccountEarned}р.", reply_markup=markup_inline)
+    await call.message.edit_text(f"Баланс для заказа услуг: {moneyAccount}р.", reply_markup=markup_inline)
 
 #ВЫБОР СИСТЕМЫ ОПЛАТЫ
 @dp.callback_query_handler(text_startswith="sendMoney", state="*")
@@ -396,7 +415,7 @@ async def next_page(call: types.CallbackQuery):
     markup_inline = types.InlineKeyboardMarkup()
     glavnoe_menu = types.InlineKeyboardButton(text="Меню", callback_data="Start")
     markup_inline.add(glavnoe_menu)
-    await call.message.edit_text('Часто задавемые  вопросы:\n\nКак долго создается бот и что такое наценка?\nСоздание бота происходит автоматически. Вам потребуется только указать свою наценку и отправить ваш токен, который вы получите у @botFather. После создания бота цены на услуги будут скоординированы под вашу выбранную наценку, где наценка и будет вашим заработком. Например, если установить наценку в 200%, услуга, которая стоила 1 рубль, будет стоить 2 рубля, где 1 рубль будет являться вашим доходом.\n\nГде посмотреть, сколько я заработал?\nВы можете найти эту информацию в основном боте в разделе "Мой кошелек". Учтите, что вывод средств происходит с задержкой с минимальной суммой вывода 200 рублей. Вы можете вывести средства на банковскую карту, YooMoney и Qiwi.\n\nПрисутствует ли комиссия при выводе средств?\nДа, при выводе средств может быть удержана комиссия. Её размер зависит от способа вывода и может быть разным. Подробнее об этом вы можете узнать в разделе "Мой кошелек" в основном боте.\n\nКакая задержка при выводе средств?\nЗадержка при выводе средств может быть разной в зависимости от выбранного способа вывода. Обычно она составляет от 1 часа до 5 рабочих дней. Некоторые способы вывода могут предусматривать более длительную задержку.\n\nЧто такое настройки?\nВы можете изменять наценку для уже созданного бота в любое время в разделе "Настройки" в основном боте.\n\nЕсли у вас осталсиь какие-либо вопросы, то можете написать в поддержку:\n@bk169\n@delowerCL', reply_markup=markup_inline)
+    await call.message.edit_text('1. Как работает бот для накрутки подписчиков?\nОтвет: Наш бот работает на основе сбора и добавления ботов-подписчиков на ваш аккаунт. Эти боты являются настоящими ботами социальных сетей, которые добавятся на ваш аккаунт и будут увеличивать количество ваших подписчиков.\n\n2. Насколько быстро я могу увеличить количество подписчиков на своем аккаунте с помощью бота?\nОтвет: Скорость увеличения количества подписчиков зависит от вашей целевой аудитории и региона. Мы можем предоставить Вам накрутку подписчиков с разной скоростью, начиная от нескольких тысяч в месяц до нескольких сотен тысяч.\n\n3. Безопасна ли накрутка подписчиков с помощью бота?\nОтвет: Мы гарантируем безопасность и соответствие правилам социальных сетей при использовании нашего бота для накрутки подписчиков. Мы используем безопасные и надежные методы накрутки, чтобы убедиться, что ваш аккаунт остается в безопасности.\n\n4. Будут ли эти боты искажать мою статистику?\nОтвет: Нет, они не будут искажать статистику вашего аккаунта, так как они не являются настоящими людьми. Это подписчики, которые добавятся на ваш аккаунт, чтобы увеличить вашу видимость и популярность в социальных сетях.', reply_markup=markup_inline)
 
 @dp.callback_query_handler(text_startswith="pravilaa", state="*")
 async def next_page(call: types.CallbackQuery):
@@ -1789,10 +1808,10 @@ async def scheduledOrder(wait_for):
             moneyUser = float(moneyUser) + float("{:.6f}".format(( (float(moneybase[0]) - (((float(getSettings('config.txt')[2]))/100) * float(origPrice[1]) + float(origPrice[1]))) )))
             dir_db = os.path.abspath(os.curdir)
             new_path = os.path.split(dir_db)[0]
-            baseMainNotification = sq.connect(f"{new_path}\\telegrammoney.db")
+            baseMainNotification = sq.connect(f"{new_path}/telegrammoney.db")
             baseMainNotification.execute(f'UPDATE USERS SET earned="{moneyUser}" WHERE user_id="{orderB[1]}"')
             baseMainNotification.commit()
-            print("Прибыль польхователя: ", moneyUser)
+            print("Прибыль пользователя: ", moneyUser)
         except Exception as e:
             print(e)
     baseMoney = baseMain.execute('UPDATE USER_ORDER SET check_cash_out = "1" WHERE status = "Выполнен✅"').fetchall()

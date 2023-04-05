@@ -1,5 +1,0 @@
-[settings]
-BOT_TOKEN = 1096243381:AAEyyZnu-FddwlaRbnwoCDoVKg1Mh-Ibs-k
-CASH_BOOST_USER = None
-DEFAULT_CASH_BOOST = 15
-
