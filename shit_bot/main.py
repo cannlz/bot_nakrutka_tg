@@ -82,10 +82,9 @@ def create_tables():
                         secretLabel STRING NOT NULL DEFAULT 0,
                         good_pay_check STRING DEFAULT False);''')
     baseMain.commit()
-
+create_tables()
 
 def register_user(user_id):
-    create_tables()
     user_check_data = baseMain.execute("SELECT user_id FROM USERS WHERE user_id = ?",(str(user_id), )).fetchone()
     if str(user_id) not in str(user_check_data):
         money = 0
