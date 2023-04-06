@@ -257,7 +257,7 @@ async def next_page(call: types.CallbackQuery, state: FSMContext):
 @dp.message_handler(state=InputCountNumber.sum_cost) 
 async def naviga(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-            messageID_state = data['message_id_user']   
+        messageID_state = data['message_id_user']   
     async with state.proxy() as proxy:  # Устанавливаем состояние ожидания
         proxy['messagesendCash'] = message.text
     if proxy["messagesendCash"] != "/start" and proxy["messagesendCash"] != "":
@@ -273,9 +273,8 @@ async def naviga(message: types.Message, state: FSMContext):
         answerCount = message.text
         messageID = messageID_state
 
-        if int(answerCount) >= 2 and answerCount != "":
+        if answerCount >= 2 and answerCount != "":
             await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🟢Сумма пополнения: {answerCount}р. \n \n🟠Минимальная сумма пополнения 2р.', reply_markup=markup_inline)
-            #global_dict("", answerCount, "", "add")
             await state.finish()
             async with state.proxy() as data:
                 data['answer_summPay'] = answerCount  
@@ -283,6 +282,8 @@ async def naviga(message: types.Message, state: FSMContext):
             await bot.delete_message(message.chat.id, message.message_id)
             await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🔴Сумма пополнения: {answerCount}р.\n \n‼️Введенная сумма меньше суммы пополнения \n \n🟠Минимальная сумма пополнения 2р.', reply_markup=markup_inlineerr)
             await state.finish()
+            async with state.proxy() as data:
+                data['message_id_user'] = messageID
             await InputCountNumber.sum_cost.set()
 
         await bot.delete_message(message.chat.id, message.message_id)

@@ -525,6 +525,8 @@ async def naviga(message: types.Message, state: FSMContext):
                 data['answerCount'] = answerCount
             await InputCountNumber.data_cashout.set() 
         else:
+            if moneyCard < 0:
+                moneyCard = 0
             await bot.delete_message(message.chat.id, message.message_id)
             await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🔴Введенная сумма: {answerCount}р.\n\n🔼Максимальная сумма к выплате: {moneyCard}р.\n🔽Минимальная сумма выплаты: 200р. \n\n‼️Введите корректную сумму', reply_markup=markup_inlineError)
             await state.finish()
