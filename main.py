@@ -127,12 +127,13 @@ async def handler(msg: types.Message):
     user_id = msg.from_user.id
     register_user(user_id)
     markup_inline = types.InlineKeyboardMarkup()
-    test_btn_create_bot = types.InlineKeyboardButton(text="Создай своего бота💎", callback_data="create_new_bot")
+    test_btn_create_bot = types.InlineKeyboardButton(text="Создать бота💎", callback_data="create_new_bot")
     balans = types.InlineKeyboardButton(text="Мой бот 💵", callback_data="balanss")
     infoButton = types.InlineKeyboardButton(text="Информация", callback_data="infoButton")
     markup_inline.add(test_btn_create_bot).add(balans).add(infoButton)
+    
 
-    await msg.answer('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @MoVisionbot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @MoVisionbot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
+    await msg.answer(f'🎉 Здравствуйте, {msg.from_user.username}!\n\n🔥Здесь вы можете за пару минут создать своего бота для накрутки соц. сетей и зарабатывать на нем.\nСоздайте бота, подключите к системе MoBot, установите наценку и получайте пассивный доход с каждой продажи.\n\nГотовы? Тогда нажимайте "Создать бота" и следуйте инструкции.\nЕсли нужна помощь - @mobot_support', reply_markup=markup_inline)
 
 
 #КАЛБЕК ГЛАВНОГО МЕНЮ
@@ -147,12 +148,12 @@ async def start_callback(call: types.CallbackQuery, state: FSMContext):
     checkMoneyTake.work = False
 
     markup_inline = types.InlineKeyboardMarkup()
-    test_btn_create_bot = types.InlineKeyboardButton(text="Создай своего бота💎", callback_data="create_new_bot")
+    test_btn_create_bot = types.InlineKeyboardButton(text="Создать бота💎", callback_data="create_new_bot")
     balans = types.InlineKeyboardButton(text="Мой бот 💵", callback_data="balanss")
     infoButton = types.InlineKeyboardButton(text="Информация", callback_data="infoButton")
     markup_inline.add(test_btn_create_bot).add(balans).add(infoButton)
 
-    await call.message.edit_text('🎉В настоящее время аккаунт с большим количеством лайков и подписчиков ценится намного выше и выглядит намного привлекательнее.\n\n🔥Сервис @MoVisionbot поможет вам  экономить время: достаточно выбрать нужную социальную сеть и количество подписчиков или лайков, все остальное мы сделаем за вас.\n\nКроме того, @MoVisionbot - это уникальный инструмент для создания коммерческого бота для накрутки, который можно создать всего в несколько кликов.\n\nВыберите действие:', reply_markup=markup_inline)
+    await call.message.edit_text(f'🎉 Здравствуйте, {call.from_user.username}!\n\n🔥Здесь вы можете за пару минут создать своего бота для накрутки соц. сетей и зарабатывать на нем.\nСоздайте бота, подключите к системе MoBot, установите наценку и получайте пассивный доход с каждой продажи.\n\nГотовы? Тогда нажимайте "Создать бота" и следуйте инструкции.\nЕсли нужна помощь - @mobot_support', reply_markup=markup_inline)
 
 
 #КАЛБЕК КНОПКИ "ИНФОРМАЦИЯ"
@@ -191,11 +192,12 @@ async def bot_settings(call: types.CallbackQuery):
     await call.answer()
     markup_inline = types.InlineKeyboardMarkup()
     back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-    btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-    btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-    btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-    btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-    markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
+    btn_procent_10 = types.InlineKeyboardButton('10%', callback_data='10p')
+    btn_procent_25 = types.InlineKeyboardButton('25%', callback_data='25p')
+    btn_procent_50 = types.InlineKeyboardButton('50%', callback_data='50p')
+    btn_procent_75 = types.InlineKeyboardButton('75%', callback_data='75p')
+    btn_procent_100 = types.InlineKeyboardButton('100%', callback_data='100p')
+    markup_inline.add(btn_procent_10, btn_procent_25, btn_procent_50, btn_procent_75, btn_procent_100).add(back_btn)
 
     bot_token = baseMain.execute(f'SELECT bot_token FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
     url = f"https://api.telegram.org/bot{bot_token}/getMe"
@@ -224,11 +226,12 @@ async def startCreateBot(call: types.CallbackQuery):
     if len(str(check_bots_limit)) != 46:
         markup_inline = types.InlineKeyboardMarkup()
         back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-        btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-        btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-        btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-        btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-        markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
+        btn_procent_10 = types.InlineKeyboardButton('10%', callback_data='10p')
+        btn_procent_25 = types.InlineKeyboardButton('25%', callback_data='25p')
+        btn_procent_50 = types.InlineKeyboardButton('50%', callback_data='50p')
+        btn_procent_75 = types.InlineKeyboardButton('75%', callback_data='75p')
+        btn_procent_100 = types.InlineKeyboardButton('100%', callback_data='100p')
+        markup_inline.add(btn_procent_10, btn_procent_25, btn_procent_50, btn_procent_75, btn_procent_100).add(back_btn)
         await call.message.edit_text("💎Выберете желаемый процент наценки:", reply_markup=markup_inline)
         chekOptionsEdit.worksettings = True
         await InputCountNumber.waiting_for_percent.set()
@@ -248,19 +251,20 @@ async def startCreateBot(call: types.CallbackQuery):
         cash_up = baseMain.execute(f'SELECT cash_up FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
         markup_inline = types.InlineKeyboardMarkup()
         back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-        btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-        btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-        btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-        btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-        markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
-        await call.message.edit_text(f"❌Ошибка! У вас уже есть активный бот\nВаш бот: {anwerLink}\n💎Наценка: {cash_up}%\n\nВыберите желаемую наценку: ", reply_markup=markup_inline)
+        btn_procent_10 = types.InlineKeyboardButton('10%', callback_data='10p')
+        btn_procent_25 = types.InlineKeyboardButton('25%', callback_data='25p')
+        btn_procent_50 = types.InlineKeyboardButton('50%', callback_data='50p')
+        btn_procent_75 = types.InlineKeyboardButton('75%', callback_data='75p')
+        btn_procent_100 = types.InlineKeyboardButton('100%', callback_data='100p')
+        markup_inline.add(btn_procent_10, btn_procent_25, btn_procent_50, btn_procent_75, btn_procent_100).add(back_btn)
+        await call.message.edit_text(f"❌Ошибка! У вас уже есть активный бот.\nВаш бот: {anwerLink}\n💎Наценка: {cash_up}%\n\nВыберите желаемую наценку: ", reply_markup=markup_inline)
         chekOptionsEdit.worksettings = False
         await InputCountNumber.waiting_for_percent.set()
 
 class chekOptionsEdit:
     worksettings = True
     #МАШИНА ОЖИДАНИЯ НАЧАЛА СОЗДАНИЯ НОВОГО БОТА(ПРОЦЕНТЫ)
-    @dp.callback_query_handler(lambda c: c.data in ['5p', '10p', '15p', '20p'], state=InputCountNumber.waiting_for_percent)
+    @dp.callback_query_handler(lambda c: c.data in ['10p', '25p', '50p', '75p', '100p'], state=InputCountNumber.waiting_for_percent)
     async def process_percent_choice(query: types.CallbackQuery, state: FSMContext):
         while chekOptionsEdit.worksettings:
             percent = query.data[:-1]
@@ -277,11 +281,12 @@ class chekOptionsEdit:
             baseMain.commit()
             markup_inline = types.InlineKeyboardMarkup()
             back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
-            btn_procent_50 = types.InlineKeyboardButton('5%', callback_data='5p')
-            btn_procent_75 = types.InlineKeyboardButton('10%', callback_data='10p')
-            btn_procent_100 = types.InlineKeyboardButton('15%', callback_data='15p')
-            btn_procent_125 = types.InlineKeyboardButton('20%', callback_data='20p')
-            markup_inline.add(btn_procent_50, btn_procent_75, btn_procent_100, btn_procent_125).add(back_btn)
+            btn_procent_10 = types.InlineKeyboardButton('10%', callback_data='10p')
+            btn_procent_25 = types.InlineKeyboardButton('25%', callback_data='25p')
+            btn_procent_50 = types.InlineKeyboardButton('50%', callback_data='50p')
+            btn_procent_75 = types.InlineKeyboardButton('75%', callback_data='75p')
+            btn_procent_100 = types.InlineKeyboardButton('100%', callback_data='100p')
+            markup_inline.add(btn_procent_10, btn_procent_25, btn_procent_50, btn_procent_75, btn_procent_100).add(back_btn)
             bot_token = baseMain.execute(f'SELECT bot_token FROM USERS WHERE user_id = {query.from_user.id}').fetchone()[0]
             url = f"https://api.telegram.org/bot{bot_token}/getMe"
 
@@ -317,8 +322,11 @@ async def process_new_bot(message: types.Message, state: FSMContext):
         
         bot_token = message.text
         if len(bot_token) != 46:
+            markup_inline = types.InlineKeyboardMarkup()
+            back_btn = types.InlineKeyboardButton(text="❌Отмена", callback_data="Start")
+            markup_inline.add(back_btn)
             await bot.delete_message(message.chat.id, message.message_id)
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=callMessageID, text="❌Неверный формат токена. Токен должен быть длиной 46 символов.")
+            await bot.edit_message_text(chat_id=message.from_user.id, message_id=callMessageID, text="❌Неверный формат токена. Токен должен быть длиной 46 символов.", reply_markup=markup_inline)
             await state.finish()
             async with state.proxy() as data:
                 data['callMessageID'] = callMessageID
@@ -366,6 +374,20 @@ async def next_page(call: types.CallbackQuery):
     markup_inline_error.add(test_btn_create_bot).add(glavnoe_menu)
 
     try:
+        check_bots_limit = baseMain.execute(f'SELECT bot_token FROM USERS WHERE user_id = {call.from_user.id}').fetchone()[0]
+        url = f"https://api.telegram.org/bot{check_bots_limit}/getMe"
+
+        headers = {
+            "accept": "application/json",
+            "User-Agent": "Telegram Bot SDK - (https://github.com/irazasyed/telegram-bot-sdk)"
+        }
+
+        response = requests.post(url, headers=headers)
+        data = response.json()
+        responseOrder = data['result']
+        responseOrder1 = responseOrder['username']
+        anwerLink = "@" + f"{responseOrder1}"
+
         new_path = baseMain.execute(f'SELECT user_bot FROM USERS WHERE user_id = {int(call.from_user.id)}').fetchone()[0]
         baseMainNotification = sq.connect(f"{new_path}/telegrammoney.db")
         baseUsers = baseMainNotification.execute(f'SELECT COUNT(user_id) FROM USERS').fetchone()[0]
@@ -377,9 +399,9 @@ async def next_page(call: types.CallbackQuery):
         moneyAccountEarned = float('{:.2f}'.format(baseMain.execute(f'SELECT earned FROM USERS WHERE user_id = {int(call.from_user.id)}').fetchone()[0])) 
 
         if moneyAccount > 100:
-            await call.message.edit_text(f'Услуга "Удаление рекламы в боте" активироана\n\nСтатистика по боту:\n\n👱‍♂️Количество пользователей: {baseUsers}чел.\n🛍Количество заказов: {baseOrders}шт.\n💳Количество пополнений: {basePays}шт.\n\nБаланс на вывод: {moneyAccountEarned}р.', reply_markup=markup_inline_prem)
+            await call.message.edit_text(f'Услуга "Удаление рекламы в боте" активироана\n\nСтатистика по боту {anwerLink}:\n\n👱‍♂️Количество пользователей: {baseUsers}чел.\n🛍Количество заказов: {baseOrders}шт.\n💳Количество пополнений: {basePays}шт.\n\nБаланс на вывод: {moneyAccountEarned}р.', reply_markup=markup_inline_prem)
         else:
-            await call.message.edit_text(f"Статистика по боту:\n\n👱‍♂️Количество пользователей: {baseUsers}чел.\n🛍Количество заказов: {baseOrders}шт.\n💳Количество пополнений: {basePays}шт.\n\nБаланс на вывод: {moneyAccountEarned}р.", reply_markup=markup_inline)
+            await call.message.edit_text(f"Статистика по боту {anwerLink}:\n\n👱‍♂️Количество пользователей: {baseUsers}чел.\n🛍Количество заказов: {baseOrders}шт.\n💳Количество пополнений: {basePays}шт.\n\nБаланс на вывод: {moneyAccountEarned}р.", reply_markup=markup_inline)
             
     except Exception as e:
         print(e)
@@ -427,7 +449,8 @@ async def cashOutCard(call: types.CallbackQuery, state: FSMContext):
         data['callMessageID'] = call.message.message_id
         data['type_cash'] = "На карту"
         data['moneyCard'] = moneyCard
-    #global_dict(call.message.message_id, "На карту", moneyCard, "add")
+    if moneyCard < 0:
+        moneyCard = 0
     await call.message.edit_text(f'✅Доступно к выводу: {moneyCard}р. \n\n‼️Минимальный вывод от 200р\n\nВведите желаемую сумму к выводу: ', reply_markup=markup_inline)
     await InputCountNumber.sum_cashout.set()
 
@@ -446,7 +469,8 @@ async def cashOutCard(call: types.CallbackQuery, state: FSMContext):
         data['callMessageID'] = call.message.message_id
         data['type_cash'] = "На Qiwi"
         data['moneyCard'] = moneyQiwi
-    #global_dict(call.message.message_id, "На Qiwi", moneyQiwi, "add")
+    if moneyQiwi < 0:
+        moneyQiwi = 0
     await call.message.edit_text(f'✅Доступно к выводу: {moneyQiwi}р. \n\n‼️Минимальный вывод от 200р\n\nВведите желаемую сумму к выводу: ', reply_markup=markup_inline)
     await InputCountNumber.sum_cashout.set()
 
@@ -465,7 +489,8 @@ async def cashOutCard(call: types.CallbackQuery, state: FSMContext):
         data['callMessageID'] = call.message.message_id
         data['type_cash'] = "На Юмани"
         data['moneyCard'] = moneyYoomoney
-    #global_dict(call.message.message_id, "На Юмани", moneyYoomoney, "add")
+    if moneyYoomoney < 0:
+        moneyYoomoney = 0
     await call.message.edit_text(f'✅Доступно к выводу: {moneyYoomoney}р. \n\n‼️Минимальный вывод от 200р\n\nВведите желаемую сумму к выводу: ', reply_markup=markup_inline)
     await InputCountNumber.sum_cashout.set()
 
@@ -476,7 +501,7 @@ async def naviga(message: types.Message, state: FSMContext):
     callMessageID = data_state.get("callMessageID")
     type_cash = data_state.get("type_cash")
     moneyCard = data_state.get("moneyCard")
-    print(data_state)
+    #print(data_state)
     #await state.finish()
     async with state.proxy() as proxy:  # Устанавливаем состояние ожидания
         proxy['messagesendCash'] = message.text
@@ -670,7 +695,7 @@ async def next_page(call: types.CallbackQuery):
     markup_inline = types.InlineKeyboardMarkup()
     glavnoe_menu = types.InlineKeyboardButton(text="Меню", callback_data="Start")
     markup_inline.add(glavnoe_menu)
-    await call.message.edit_text('Часто задаваемые вопросы:\n\nКак долго создается бот и что такое наценка?\nСоздание бота происходит автоматически. Вам потребуется только указать свою наценку и отправить ваш токен, который вы получите у @botFather. После создания бота цены на услуги будут скоординированы под вашу выбранную наценку, где наценка и будет вашим заработком. Например, если установить наценку в 200%, услуга, которая стоила 1 рубль, будет стоить 2 рубля, где 1 рубль будет являться вашим доходом.\n\nГде посмотреть, сколько я заработал?\nВы можете найти эту информацию в основном боте в разделе "Мой кошелек". Учтите, что вывод средств происходит с задержкой с минимальной суммой вывода 200 рублей. Вы можете вывести средства на банковскую карту, YooMoney и Qiwi.\n\nПрисутствует ли комиссия при выводе средств?\nДа, при выводе средств может быть удержана комиссия. Её размер зависит от способа вывода и может быть разным. Подробнее об этом вы можете узнать в разделе "Мой кошелек" в основном боте.\n\nКакая задержка при выводе средств?\nЗадержка при выводе средств может быть разной в зависимости от выбранного способа вывода. Обычно она составляет от 1 часа до 5 рабочих дней. Некоторые способы вывода могут предусматривать более длительную задержку.\n\nЧто такое настройки?\nВы можете изменять наценку для уже созданного бота в любое время в разделе "Настройки" в основном боте.', reply_markup=markup_inline)
+    await call.message.edit_text('Часто задаваемые вопросы:\n\nКак долго создается бот и что такое наценка?\nСоздание бота происходит автоматически. Вам потребуется только указать свою наценку и отправить ваш токен, который вы получите у @botFather. После создания бота цены на услуги будут скоординированы под вашу выбранную наценку, где наценка и будет вашим заработком. Например, если установить наценку в 200%, услуга, которая стоила 1 рубль, будет стоить 2 рубля, где 1 рубль будет являться вашим доходом.\n\nГде посмотреть, сколько я заработал?\nВы можете найти эту информацию в основном боте в разделе "Мой кошелек". Учтите, что вывод средств происходит с задержкой с минимальной суммой вывода 200 рублей. Вы можете вывести средства на банковскую карту, YooMoney и Qiwi.\n\nПрисутствует ли комиссия при выводе средств?\nДа, при выводе средств может быть удержана комиссия. Её размер зависит от способа вывода и может быть разным. Подробнее об этом вы можете узнать в разделе "Мой кошелек" в основном боте.\n\nКакая задержка при выводе средств?\nЗадержка при выводе средств может быть разной в зависимости от выбранного способа вывода. Обычно она составляет от 1 часа до 5 рабочих дней. Некоторые способы вывода могут предусматривать более длительную задержку.\n\nЧто такое настройки?\nВы можете изменять наценку для уже созданного бота в любое время в разделе "Настройки" в основном боте.\n\nЕсли у вас осталсиь какие-либо вопросы:\nПоддержка: @mobot_support', reply_markup=markup_inline)
 
 @dp.callback_query_handler(text_startswith="pravilaa", state="*")
 async def next_page(call: types.CallbackQuery):
