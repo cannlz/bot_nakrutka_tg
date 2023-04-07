@@ -1789,24 +1789,27 @@ async def scheduledOrder(wait_for):
     await asyncio.sleep(wait_for)
     #ПРОВЕРКА СТАТУСА ЗАКАЗА
     print("ORDER STATUS CHECKING...")
-    baseOrders = baseMain.execute(f'SELECT order_number, id_user, money, status FROM USER_ORDER').fetchall()  
-    for orderB in baseOrders:
-        checkOrders = request.checkingOrderStatus("status", orderB[0])
-        if checkOrders[0] == "Completed":
-            baseOrders = baseMain.execute(f'UPDATE USER_ORDER SET status = "Выполнен✅" WHERE order_number = "{orderB[0]}"')
-            baseMain.commit()
-        elif checkOrders[0] == "Inprogress":
-            baseOrders = baseMain.execute(f'UPDATE USER_ORDER SET status = "В процессе⏳" WHERE order_number = "{orderB[0]}"')
-            baseMain.commit()
-        elif checkOrders[0] == "Cancelled" and orderB[3] != "Отменён❌(Баланс возвращен)":
-            oldBalace = baseMain.execute(f'SELECT money FROM USERS WHERE user_id = {orderB[1]}').fetchone()[0]
-            refBalance = float(oldBalace) + float(orderB[2])
+    try:
+        baseOrders = baseMain.execute(f'SELECT order_number, id_user, money, status FROM USER_ORDER').fetchall()  
+        for orderB in baseOrders:
+            checkOrders = request.checkingOrderStatus("status", orderB[0])
+            if checkOrders[0] == "Completed":
+                baseOrders = baseMain.execute(f'UPDATE USER_ORDER SET status = "Выполнен✅" WHERE order_number = "{orderB[0]}"')
+                baseMain.commit()
+            elif checkOrders[0] == "Inprogress":
+                baseOrders = baseMain.execute(f'UPDATE USER_ORDER SET status = "В процессе⏳" WHERE order_number = "{orderB[0]}"')
+                baseMain.commit()
+            elif checkOrders[0] == "Cancelled" and orderB[3] != "Отменён❌(Баланс возвращен)":
+                oldBalace = baseMain.execute(f'SELECT money FROM USERS WHERE user_id = {orderB[1]}').fetchone()[0]
+                refBalance = float(oldBalace) + float(orderB[2])
 
-            baseMain.execute(f'UPDATE USERS SET money = {refBalance} WHERE user_id = "{orderB[1]}"')
-            baseMain.commit()
+                baseMain.execute(f'UPDATE USERS SET money = {refBalance} WHERE user_id = "{orderB[1]}"')
+                baseMain.commit()
 
-            baseOrders = baseMain.execute(f'UPDATE USER_ORDER SET status = "Отменён❌(Баланс возвращен)" WHERE order_number = "{orderB[0]}"')
-            baseMain.commit()
+                baseOrders = baseMain.execute(f'UPDATE USER_ORDER SET status = "Отменён❌(Баланс возвращен)" WHERE order_number = "{orderB[0]}"')
+                baseMain.commit()
+    except Exception as e:
+        print("ОШИБКА ПРОВЕРКИ СТАТУСА ЗАКАЗОВ: ", e)
 
     baseMoney = baseMain.execute('SELECT money, order_number, quantity FROM USER_ORDER WHERE status = "Выполнен✅" AND check_cash_out = "0"').fetchall()
     moneyUser = 0
