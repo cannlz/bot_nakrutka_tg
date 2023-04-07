@@ -273,14 +273,22 @@ async def naviga(message: types.Message, state: FSMContext):
         answerCount = message.text
         messageID = messageID_state
 
-        if answerCount >= 2 and answerCount != "":
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🟢Сумма пополнения: {answerCount}р. \n \n🟠Минимальная сумма пополнения 2р.', reply_markup=markup_inline)
-            await state.finish()
-            async with state.proxy() as data:
-                data['answer_summPay'] = answerCount  
+        if answerCount.isdigit():
+            if int(answerCount) >= 2:
+                await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🟢Сумма пополнения: {answerCount}р. \n \n🟠Минимальная сумма пополнения 2р.', reply_markup=markup_inline)
+                await state.finish()
+                async with state.proxy() as data:
+                    data['answer_summPay'] = answerCount  
+            else:
+                await bot.delete_message(message.chat.id, message.message_id)
+                await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🔴Сумма пополнения: {answerCount}р.\n \n‼️Введенная сумма меньше суммы пополнения \n \n🟠Минимальная сумма пополнения 2р.', reply_markup=markup_inlineerr)
+                await state.finish()
+                async with state.proxy() as data:
+                    data['message_id_user'] = messageID
+                await InputCountNumber.sum_cost.set()
         else:
             await bot.delete_message(message.chat.id, message.message_id)
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🔴Сумма пополнения: {answerCount}р.\n \n‼️Введенная сумма меньше суммы пополнения \n \n🟠Минимальная сумма пополнения 2р.', reply_markup=markup_inlineerr)
+            await bot.edit_message_text(chat_id=message.from_user.id, message_id=messageID, text=f'🔴Сумма пополнения: {answerCount}р.\n \n‼️Введите число \n \n🟠Минимальная сумма пополнения 2р.', reply_markup=markup_inlineerr)
             await state.finish()
             async with state.proxy() as data:
                 data['message_id_user'] = messageID
@@ -405,7 +413,7 @@ async def completeOrder(call: types.CallbackQuery, state: FSMContext):
             baseMain.commit()
             await call.message.edit_text(f'❌Произошла ошибка на стороне сервера\n\n➡️Баланс возвращён: +{orderCost}р.', reply_markup=markup_inlineErrorServ) # делаем вывод инфы 
     else:
-        await call.message.edit_text(f'❌У вас недостаточно средств для совершения операции \n\nВаш баланс: "{userMoney}"\n\nСтоимость заказа: "{orderCost}"', reply_markup=markup_inlineNoBalance) # делаем вывод инфы
+        await call.message.edit_text(f'❌У вас недостаточно средств для совершения операции \n\nВаш баланс: "{userMoney}р."\n\nСтоимость заказа: "{orderCost}р."', reply_markup=markup_inlineNoBalance) # делаем вывод инфы
 
 
 
