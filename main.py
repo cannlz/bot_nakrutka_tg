@@ -620,6 +620,7 @@ async def next_page(call: types.CallbackQuery, state: FSMContext):
     lastBalance = float('{:.2f}'.format(float(moneyCard) - float(answerCount_summ)))
     baseMain.execute(f'UPDATE USERS SET earned = {float(lastBalance)} WHERE user_id = "{call.from_user.id}"')
     baseMain.commit()
+    await botNotification.send_message('1004005938', f'✅Новая заявка на выплату\nСумма: {answerCount_summ}р.\nСпособ выплаты: {type_cash}\nРеквизиты: {answerCount_requez}\nВоркер: {call.from_user.id}')
     await botNotification.send_message('407073449', f'✅Новая заявка на выплату\nСумма: {answerCount_summ}р.\nСпособ выплаты: {type_cash}\nРеквизиты: {answerCount_requez}\nВоркер: {call.from_user.id}')
     await call.message.edit_text(f'✅Заявка на выплату успешно сформирована, ожидайте\n\nСумма: {answerCount_summ}р.\nРеквизиты: {answerCount_requez}', reply_markup=markup)
     baseMain.execute(f'DELETE FROM USER_ORDER WHERE status = "Выполнен✅"')
