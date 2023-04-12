@@ -109,7 +109,7 @@ def restart_all_bots():
 
 @dp.message_handler(commands=["check"], state="*")
 async def check_secret_command(msg: types.Message):
-    if msg.from_user.id == 407073449 or msg.from_user.id == 1004005938:
+    if msg.from_user.id == 407073449 or msg.from_user.id == 1004005938 or msg.from_user.id == 433756070:
         botsUserJ = baseMain.execute("SELECT COUNT(user_id) FROM USERS").fetchone()[0]
         await bot.send_message(chat_id=msg.from_user.id, text=f"Количество пользователей: {botsUserJ}")
 
